@@ -183,33 +183,46 @@ test/                         # node:test 单元测试
 - 设置面板：`Zotero.PreferencePanes.register({ pluginID, src, scripts, label })`，面板内用 `preference="extensions.zotero.pdfTranslate.xxx"` 声明式绑定
 - 插件作用域：所有脚本通过 `Services.scriptloader.loadSubScript(url, scope)` 载入同一个 sandbox，共享 `ZPT` 命名空间
 
-### 发布新版本（GitHub Release）
+### 发布新版本（GitHub Actions 自动发版）
 
-仓库：<https://github.com/TheJieee/zotero-pdf-translate>
+仓库：<https://github.com/TheJieee/zotero-pdf-translate> ｜ Actions：<https://github.com/TheJieee/zotero-pdf-translate/actions>
+
+**打 tag 即自动发版**（`.github/workflows/release.yml`）：
 
 ```powershell
-# 1) 改版本号（package.json 与 addon/manifest.json 两处，check 会校验一致）
-# 2) 构建 + 生成更新清单（含 XPI 的 sha256）
-npm run release
-# 3) 提交并打标签
-git add -A; git commit -m "release v1.0.1"; git tag v1.0.1; git push origin main --tags
-# 4) 发布 Release 并上传资源（更新清单 + 插件包）
-gh release create v1.0.1 dist/zotero-pdf-translate-1.0.1.xpi release/updates.json `
-  --title "v1.0.1" --notes "变更说明…"
+# 1) 改版本号：package.json 与 addon/manifest.json 两处都要改（npm run check 会校验一致）
+# 2) 本地先自查
+npm run check; npm test; npm run verify
+# 3) 提交 + 打 tag 推送（tag 必须是 v + 版本号，workflow 会核对）
+git add -A; git commit -m "release v1.0.1"; git tag v1.0.1
+git -c http.proxy=http://127.0.0.1:7897 push origin main --tags
 ```
 
-两个资源的固定下载地址（`releases/latest/download/…` 永远指向最新 Release）：
+workflow 会自动完成：`npm run check` → `npm test` → `npm run release`（构建 XPI + 生成含 sha256 的 `updates.json`）→ 核对 tag 与构建版本是否一致 → 创建 Release 并上传 `zotero-pdf-translate-<版本>.xpi` 与 `updates.json`。
+
+也可以在 **Actions → Release → Run workflow** 手动触发：
+
+- `dry_run = true`（默认）：只构建并上传构建产物（artifact），不创建 Release
+- `dry_run = false` + `tag = v1.0.1-ci-test`：创建一个**预发布**用于验证发布链路，不影响 `releases/latest/download/…`
+
+`.github/workflows/ci.yml` 则在 push 到 main 与 PR 时跑 `check` / `test` / `build`。
+
+两个资源的固定地址（`latest` 永远指向最新正式 Release）：
 
 - 插件包：`https://github.com/TheJieee/zotero-pdf-translate/releases/latest/download/zotero-pdf-translate-<版本>.xpi`
 - 更新清单：`https://github.com/TheJieee/zotero-pdf-translate/releases/latest/download/updates.json` ← 这就是 `addon/manifest.json` 里 `update_url` 的值
 
 Zotero 会自动用 `update_url` 检查更新：`updates.json` 里的 `update_link` 指向新的 XPI，`update_hash` 用于校验完整性。
 
+> 不想用 Actions 时的手动发布：`npm run release` 后执行
+> `gh release create v1.0.1 dist/*.xpi release/updates.json --title v1.0.1 --notes "变更说明"`
+
 > 本机网络提示：GitHub 直连被阻断，需要走本地代理（示例 `127.0.0.1:7897`）。Git for Windows 不读系统代理，push 时显式指定：
 > ```powershell
 > git -c http.proxy=http://127.0.0.1:7897 push origin main --tags
 > $env:HTTPS_PROXY='http://127.0.0.1:7897'; gh release create ...
 > ```
+> 另外，**推送包含 `.github/workflows/**` 的改动需要 token 具备 `workflow` 权限**，否则 GitHub 会拒绝推送（`refusing to allow an OAuth App to create or update workflow`）。补权限：`gh auth refresh -h github.com -s workflow`。
 
 ### 调试接口
 
