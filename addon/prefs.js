@@ -4,6 +4,9 @@
  */
 pref("extensions.zotero.pdfTranslate.provider", "google-free");
 pref("extensions.zotero.pdfTranslate.provider.autoFallback", true);
+/* Smart routing: single words -> Google free endpoint, sentences -> LLM API,
+ * each falling back to the other family when unavailable. */
+pref("extensions.zotero.pdfTranslate.translate.autoRoute", true);
 pref("extensions.zotero.pdfTranslate.sourceLang", "auto");
 pref("extensions.zotero.pdfTranslate.targetLang", "zh-CN");
 
@@ -11,6 +14,8 @@ pref("extensions.zotero.pdfTranslate.popup.showButton", true);
 pref("extensions.zotero.pdfTranslate.popup.buttonLabel", "译");
 pref("extensions.zotero.pdfTranslate.popup.width", 380);
 pref("extensions.zotero.pdfTranslate.popup.showSource", true);
+/* Close the floating card when the user clicks outside of it. */
+pref("extensions.zotero.pdfTranslate.popup.closeOnClickOutside", true);
 
 pref("extensions.zotero.pdfTranslate.annotation.enabled", true);
 pref("extensions.zotero.pdfTranslate.annotation.type", "highlight");

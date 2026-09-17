@@ -67,6 +67,50 @@ test('openai: parse unwraps fenced code blocks and rejects empty content', () =>
 	assert.throws(() => openai.parse({}), (error) => error.code === 'emptyResult');
 });
 
+function payloadFor(baseURL, model = 'm') {
+	const request = openai.buildRequest({ baseURL, apiKey: 'k', model, systemPrompt: '' }, 'Hi', 'en', 'zh-CN');
+	return JSON.parse(request.body);
+}
+
+test('openai: thinking is switched off for the services that need their own field', () => {
+	assert.deepEqual(payloadFor('https://api.deepseek.com/v1', 'deepseek-chat').thinking, { type: 'disabled' });
+	assert.equal(payloadFor('https://dashscope.aliyuncs.com/compatible-mode/v1').enable_thinking, false);
+	assert.deepEqual(payloadFor('https://open.bigmodel.cn/api/paas/v4').thinking, { type: 'disabled' });
+	assert.deepEqual(payloadFor('https://api.z.ai/api/paas/v4').thinking, { type: 'disabled' });
+	assert.deepEqual(payloadFor('https://openrouter.ai/api/v1').reasoning, { enabled: false });
+	assert.equal(payloadFor('https://ollama.com/v1').reasoning_effort, 'none');
+});
+
+test('openai: a local server is asked to stop thinking too', () => {
+	// Ollama: reasoning_effort is the documented switch on /v1
+	const ollama = payloadFor('http://localhost:11434/v1', 'qwen3:8b');
+	assert.equal(ollama.reasoning_effort, 'none');
+	assert.equal(ollama.chat_template_kwargs.enable_thinking, false);
+
+	// vLLM / llama.cpp read the Jinja chat template kwarg and validate the
+	// effort values, so they must not receive reasoning_effort
+	const vllm = payloadFor('http://127.0.0.1:8000/v1', 'Qwen/Qwen3-8B');
+	assert.equal(vllm.reasoning_effort, undefined);
+	assert.equal(vllm.chat_template_kwargs.enable_thinking, false);
+});
+
+test('openai: unrecognized services keep the untouched request body', () => {
+	const payload = payloadFor('https://api.openai.com/v1', 'gpt-4o-mini');
+	assert.deepEqual(Object.keys(payload).sort(), ['messages', 'model', 'stream', 'temperature']);
+	assert.equal(payload.thinking, undefined);
+	assert.equal(payload.reasoning_effort, undefined);
+	assert.equal(payload.enable_thinking, undefined);
+	assert.equal(payload.chat_template_kwargs, undefined);
+	// A vendor name inside a path or key is not a vendor
+	assert.equal(openai.thinkingDisabledFields('https://gateway.example.com/deepseek.com/v1').thinking, undefined);
+});
+
+test('openai: hostOf strips user-info, port and path', () => {
+	assert.equal(openai.hostOf('https://user:pw@api.deepseek.com:443/v1'), 'api.deepseek.com');
+	assert.equal(openai.hostOf('http://localhost:11434/v1'), 'localhost');
+	assert.equal(openai.hostOf(''), '');
+});
+
 const mymemory = ZPT.providers.mymemory;
 
 test('mymemory: buildURL uses Autodetect when the source language is automatic', () => {

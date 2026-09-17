@@ -86,6 +86,9 @@ ZPT.providers['google-free'] = (function () {
 	return {
 		id: ID,
 		labelKey: 'provider.' + ID,
+		// Family used by the smart router: 'free' = dictionary-ish web endpoint,
+		// 'llm' = chat-completions model
+		kind: 'free',
 		needsApiKey: false,
 		isConfigured: () => true,
 		translate,

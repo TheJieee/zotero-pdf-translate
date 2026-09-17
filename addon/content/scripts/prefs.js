@@ -13,12 +13,15 @@ ZPT.prefs = (function () {
 	const DEFAULTS = {
 		provider: 'google-free',
 		'provider.autoFallback': true,
+		// Smart routing: word -> free endpoint, sentence -> LLM, with fallback
+		'translate.autoRoute': true,
 		sourceLang: 'auto',
 		targetLang: 'zh-CN',
 		'popup.showButton': true,
 		'popup.buttonLabel': '译',
 		'popup.width': 380,
 		'popup.showSource': true,
+		'popup.closeOnClickOutside': true,
 		'annotation.enabled': true,
 		'annotation.type': 'highlight',
 		'annotation.color': '#ffd400',

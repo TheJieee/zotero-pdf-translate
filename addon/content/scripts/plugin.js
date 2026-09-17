@@ -57,6 +57,9 @@ ZPT.plugin = (function () {
 					ZPT.rootURI + 'content/scripts/log.js',
 					ZPT.rootURI + 'content/preferences.js'
 				],
+				// Sizes the fields (XUL gives an html:input its intrinsic width,
+				// so they used to look cramped next to their label)
+				stylesheets: [ZPT.rootURI + 'content/preferences.css'],
 				label: ZPT.l10n.t('prefs.paneLabel')
 			});
 			ZPT.log.debug('registered preference pane ' + paneID);

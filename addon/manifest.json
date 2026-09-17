@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
   "name": "PDF Translate",
-  "version": "1.0.0",
-  "description": "划词翻译：在 Zotero 阅读器中选中 PDF/EPUB 文本后点击悬浮按钮即可查看译文。支持 Google 免费接口、MyMemory 与 OpenAI 兼容接口。",
+  "version": "1.1.0",
+  "description": "划词翻译：在 Zotero 阅读器中选中 PDF/EPUB 文本后点击悬浮按钮即可查看译文。单词自动走 Google 免费接口、句子自动走 OpenAI 兼容接口，支持 MyMemory 与自动回退。",
   "author": "TheJieee",
   "homepage_url": "https://github.com/TheJieee/zotero-pdf-translate",
   "icons": {

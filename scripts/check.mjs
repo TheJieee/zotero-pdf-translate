@@ -165,6 +165,47 @@ for (const match of paneScript.matchAll(/byId\('([^']+)'\)/g)) {
 }
 notes.push(`checked ${markupIds.size} markup ids`);
 
+// --- 5b. Files referenced by the preference pane registration --------------
+// plugin.js points Zotero at content/... through ZPT.rootURI + '...'; a typo
+// there would only show up as a broken pane at runtime.
+{
+	const pluginScript = read('addon/content/scripts/plugin.js');
+	const referenced = new Set();
+	for (const match of pluginScript.matchAll(/ZPT\.rootURI\s*\+\s*'([^']+)'/g)) {
+		referenced.add(match[1]);
+	}
+	for (const file of referenced) {
+		if (!fs.existsSync(path.join(addonDir, file))) {
+			fail(`plugin.js references missing file ${file}`);
+		}
+	}
+	// The pane stylesheet has to be registered too, otherwise the fields are
+	// left with their intrinsic width.
+	if (referenced.has('content/preferences.css') && !/stylesheets\s*:/.test(pluginScript)) {
+		fail('plugin.js references preferences.css but does not pass stylesheets to PreferencePanes.register');
+	}
+	notes.push(`checked ${referenced.size} plugin-referenced files`);
+}
+
+// --- 5c. Preference pane fields -------------------------------------------
+{
+	const fields = [...paneMarkup.matchAll(/<(?:html:)?(?:input|textarea)\b[^>]*>/g)].map((m) => m[0]);
+	const missing = [];
+	for (const tag of fields) {
+		const id = /id="([^"]+)"/.exec(tag);
+		if (!/placeholder="/.test(tag)) {
+			missing.push((id ? id[1] : tag) + ' (placeholder)');
+		}
+		if (!/class="[^"]*zpt-field/.test(tag)) {
+			missing.push((id ? id[1] : tag) + ' (zpt-field)');
+		}
+	}
+	if (missing.length) {
+		fail(`preference pane fields without an input hint / full-width class: ${missing.join(', ')}`);
+	}
+	notes.push(`checked ${fields.length} preference pane fields`);
+}
+
 // --- 6. Manifest -----------------------------------------------------------
 try {
 	const manifest = JSON.parse(read('addon/manifest.json'));

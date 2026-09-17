@@ -1,8 +1,8 @@
 {
   "name": "zotero-pdf-translate",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "Zotero 划词翻译插件：在 PDF/EPUB 阅读器中选中文本后点击悬浮按钮即可查看译文（Google 免费接口 / MyMemory / OpenAI 兼容接口）",
+  "description": "Zotero 划词翻译插件：在 PDF/EPUB 阅读器中选中文本后点击悬浮按钮即可查看译文（Google 免费接口 / MyMemory / OpenAI 兼容接口，单词自动走 Google、句子自动走 LLM）",
   "type": "module",
   "repository": {
     "type": "git",

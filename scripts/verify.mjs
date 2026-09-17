@@ -55,6 +55,7 @@ function checkXpi() {
 		'bootstrap.js',
 		'prefs.js',
 		'content/preferences.xhtml',
+		'content/preferences.css',
 		'content/preferences.js',
 		'content/scripts/plugin.js',
 		'content/scripts/reader-ui.js',
@@ -159,6 +160,8 @@ function checkZoteroApi() {
 		['Zotero.Utilities.Internal.copyTextToClipboard', XPCOM + 'utilities_internal.js', /copyTextToClipboard:\s*function/],
 		['Zotero.PreferencePanes.register', XPCOM + 'preferencePanes.js', /register:\s*async function/],
 		['preference panes use defaultXUL', XPCOM + 'preferencePanes.js', /defaultXUL:\s*true/],
+		['preference pane stylesheets', XPCOM + 'preferencePanes.js', /options\.stylesheets\s*\|\|=/],
+		['preference pane scripts', XPCOM + 'preferencePanes.js', /options\.scripts\s*\|\|=/],
 		['preference attribute binding', 'chrome/content/zotero/preferences/preferences.js', /_syncFromPref\(elem, preference/],
 		['Zotero.Prefs.get/set', XPCOM + 'prefs.js', /this\.get = get;/],
 		['Zotero.Prefs.registerObserver', XPCOM + 'prefs.js', /this\.registerObserver|registerObserver/],
@@ -167,6 +170,7 @@ function checkZoteroApi() {
 		['plugin sandbox globals (Services, IOUtils, Zotero)', XPCOM + 'plugins.js', /IOUtils,/],
 		['plugin prefs.js loading', XPCOM + 'plugins.js', /getResourceURI\("prefs\.js"\)/],
 		['plugin locale auto-registration', XPCOM + 'plugins.js', /registerLocales/],
+		['Zotero.getMainWindow', XPCOM + 'zotero.js', /this\.getMainWindow = function/],
 		['Zotero.initializationPromise', XPCOM + 'zotero.js', /initializationPromise/]
 	];
 

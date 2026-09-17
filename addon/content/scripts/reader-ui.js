@@ -256,7 +256,11 @@ ZPT.readerUI = (function () {
 			context: null,
 			translation: '',
 			pending: 0,
-			dragged: false
+			dragged: false,
+			// Document-level listeners, kept so they can be removed again
+			outsideEvents: null,
+			onKeydown: null,
+			onContextMenu: null
 		};
 
 		closeButton.addEventListener('click', () => hideCard(state));
@@ -267,13 +271,160 @@ ZPT.readerUI = (function () {
 				runTranslation(state, state.context, true);
 			}
 		});
-		doc.addEventListener('keydown', (event) => {
+		state.onKeydown = (event) => {
 			if (event.key === 'Escape' && !card.hidden) {
 				hideCard(state);
 			}
-		}, true);
+		};
+		doc.addEventListener('keydown', state.onKeydown, true);
 		makeDraggable(state);
 		return state;
+	}
+
+	/*
+	 * Click-outside handling. Zotero's own selection popup is a transient
+	 * overlay, so the card is dismissed by the same interaction that dismisses
+	 * it: any press that does not land on the card (the page, the annotation
+	 * sidebar, the selection popup, ...). Capture phase so that the press is
+	 * seen before the reader handles it, and the card gets a chance to close
+	 * first.
+	 */
+	const OUTSIDE_EVENTS = ['pointerdown', 'mousedown'];
+
+	/*
+	 * Every document a press can land in while the card is open. `event.doc` is
+	 * only the *reader* document (reader.html): the PDF pages are drawn by
+	 * pdf.js in an iframe nested inside it, and a press in a child iframe never
+	 * reaches the parent document — not even in the capture phase. Listening on
+	 * the reader document alone therefore misses the most common "outside"
+	 * press there is, the page itself. (Zotero's own overlay popups scan the
+	 * reader's iframes for exactly this reason.) The reader in turn lives in a
+	 * `<browser>` inside a chrome window, whose tabs and toolbars are a third
+	 * document again.
+	 */
+	function pressDocuments(doc) {
+		let documents = [doc];
+		let host = hostDocument(doc);
+		if (host) {
+			documents.push(host);
+		}
+		// Nested scan — the viewer iframe may contain further ones — with an
+		// indexOf guard, since the list is the queue being walked.
+		for (let index = 0; index < documents.length; index++) {
+			let frames;
+			try {
+				frames = documents[index].querySelectorAll('iframe');
+			}
+			catch (e) {
+				continue;
+			}
+			for (let i = 0; i < frames.length; i++) {
+				let inner = frameDocument(frames[i]);
+				if (inner && documents.indexOf(inner) === -1) {
+					documents.push(inner);
+				}
+			}
+		}
+		return documents;
+	}
+
+	/** The chrome document hosting this reader, or null if it cannot be reached. */
+	function hostDocument(doc) {
+		try {
+			let win = doc.defaultView || doc.ownerGlobal;
+			let frame = win && win.frameElement;
+			if (frame && frame.ownerGlobal && frame.ownerGlobal !== win) {
+				return frame.ownerGlobal.document || null;
+			}
+		}
+		catch (e) {}
+		try {
+			let main = Zotero.getMainWindow && Zotero.getMainWindow();
+			return (main && main.document) || null;
+		}
+		catch (e) {
+			return null;
+		}
+	}
+
+	/** A frame's document, or null for a frame we are not allowed to watch. */
+	function frameDocument(frame) {
+		let inner = null;
+		try {
+			inner = frame.contentDocument;
+		}
+		catch (e) {
+			inner = null;
+		}
+		if (!inner) {
+			try {
+				inner = (frame.contentWindow && frame.contentWindow.document) || null;
+			}
+			catch (e) {
+				inner = null;
+			}
+		}
+		return inner;
+	}
+
+	function onOutsideEvent(state, event) {
+		if (state.card.hidden) {
+			return;
+		}
+		// Only a primary press counts: a right/middle press outside must not
+		// dismiss the card (the user may be opening a context menu on it).
+		if (typeof event.button === 'number' && event.button !== 0) {
+			return;
+		}
+		let target = event.target;
+		try {
+			if (target && state.card.contains(target)) {
+				return;
+			}
+		}
+		catch (e) {}
+		hideCard(state);
+	}
+
+	function attachOutsideClose(state) {
+		if (state.outsideEvents || !ZPT.prefs.getBool('popup.closeOnClickOutside')) {
+			return;
+		}
+		let handler = (event) => {
+			try {
+				onOutsideEvent(state, event);
+			}
+			catch (e) {
+				ZPT.log.warn('click-outside handler failed: ' + e);
+			}
+		};
+		let targets = pressDocuments(state.doc);
+		state.outsideEvents = { handler, targets };
+		for (let target of targets) {
+			for (let type of OUTSIDE_EVENTS) {
+				try {
+					target.addEventListener(type, handler, true);
+				}
+				catch (e) {}
+			}
+		}
+		ZPT.log.debug('dismiss-on-outside-click listening on ' + targets.length + ' document(s)');
+	}
+
+	function detachOutsideClose(state) {
+		if (!state.outsideEvents) {
+			return;
+		}
+		let { handler, targets } = state.outsideEvents;
+		state.outsideEvents = null;
+		for (let target of targets) {
+			for (let type of OUTSIDE_EVENTS) {
+				try {
+					target.removeEventListener(type, handler, true);
+				}
+				catch (e) {}
+			}
+		}
 	}
 
 	function makeDraggable(state) {
@@ -321,12 +472,15 @@ ZPT.readerUI = (function () {
 		// Keep clicks inside the card away from the reader UI
 		card.addEventListener('pointerdown', (event) => event.stopPropagation());
 		card.addEventListener('click', (event) => event.stopPropagation());
-		doc.addEventListener('contextmenu', (event) => {
+		// Keep the reader's context menu off the card's content
+		state.onContextMenu = (event) => {
 			if (!card.hidden && card.contains(event.target)) {
 				event.stopPropagation();
 			}
-		}, true);
+		};
+		doc.addEventListener('contextmenu', state.onContextMenu, true);
 	}
+
 
 	function viewport(state) {
 		let win = state.doc.defaultView || state.doc.ownerGlobal;
@@ -402,6 +556,7 @@ ZPT.readerUI = (function () {
 		state.status.textContent = ZPT.l10n.t('ui.pinHint');
 		state.card.hidden = false;
 		state.card.setAttribute('data-state', 'loading');
+		attachOutsideClose(state);
 
 		if (!visible || !state.dragged) {
 			positionCard(state, anchorRect);
@@ -429,6 +584,18 @@ ZPT.readerUI = (function () {
 		}
 	}
 
+	/**
+	 * " · word" / " · sentence" suffix so the user can see which route the
+	 * automatic detection picked.
+	 */
+	function routeSuffix(result) {
+		if (!result || !result.route) {
+			return '';
+		}
+		let label = ZPT.translate.kindLabel(result.kind);
+		return label ? ' · ' + label : '';
+	}
+
 	async function runTranslation(state, context, force) {
 		let token = ++state.pending;
 		state.card.setAttribute('data-state', 'loading');
@@ -454,7 +621,8 @@ ZPT.readerUI = (function () {
 				? ZPT.l10n.t('ui.fallbackSuffix', { from: ZPT.translate.providerLabel(result.fallbackFrom) })
 				: '';
 			state.meta.textContent = (result.providerLabel || ZPT.translate.providerLabel())
-				+ ' · ' + source + ' → ' + ZPT.translate.langLabel(result.targetLang) + fallback;
+				+ ' · ' + source + ' → ' + ZPT.translate.langLabel(result.targetLang)
+				+ routeSuffix(result) + fallback;
 			state.status.textContent = result.cached
 				? ZPT.l10n.t('ui.cached')
 				: ZPT.l10n.t('ui.charCount', { count: result.text.length });
@@ -476,6 +644,7 @@ ZPT.readerUI = (function () {
 		state.pending++;
 		state.card.hidden = true;
 		state.dragged = false;
+		detachOutsideClose(state);
 	}
 
 	function copyTranslation(state) {
@@ -518,8 +687,11 @@ ZPT.readerUI = (function () {
 	function cleanupDocument(doc) {
 		try {
 			let state = states.get(doc);
-			if (state && state.card) {
-				state.card.remove();
+			if (state) {
+				detachOutsideClose(state);
+				if (state.card) {
+					state.card.remove();
+				}
 			}
 			let style = doc.getElementById(STYLE_ID);
 			if (style) {

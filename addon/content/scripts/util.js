@@ -149,6 +149,91 @@ ZPT.util = (function () {
 		return s.length > max ? s.slice(0, max) + '…' : s;
 	}
 
+	// --- Word vs. sentence detection -----------------------------------------
+	// A "word" is a single lexical unit (glossary lookup, where the key-less
+	// Google endpoint is strong and instant); anything longer is a "sentence"
+	// and gets the context-aware LLM treatment.
+	const WORD_TEXT_MAX = 40;
+	const CJK_WORD_TEXT_MAX = 12;
+	const CJK_PHRASE_TEXT_MAX = 20;
+	const CJK_RE = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uac00-\ud7af]/g;
+	// Sentence-ending punctuation, including the CJK variants
+	const END_PUNCT = [
+		'.', '!', '?', '\u3002', '\uff01', '\uff1f', '\uff1b', ';', ':', '\u2026', '\u00b7'
+	];
+	const CJK_END_PUNCT = ['\u3002', '\uff01', '\uff1f', '\uff1b', '\u2026'];
+	const NLP_PUNCT = [
+		'.', '!', '?', '\u3002', '\uff01', '\uff1f', '\uff1b', ';', ',', '\uff0c', '\u2026'
+	];
+	// Single tokens that merely look punctuated: numbers, identifiers, links,
+	// abbreviations ("e.g.", "transformer."). These are dictionary lookups.
+	// CJK is excluded on purpose — "方法。" carries real sentence punctuation.
+	const HAS_ALNUM_RE = /[0-9A-Za-z]/;
+	const WORDLIKE_RE = /^(?:[+-]?\d[\d\s.,:/-]*\d?%?|10\.\d{4,9}\/\S*|\w[\w.+-]*@\w[\w.-]*\.\w{2,}|https?:\/\/\S+|www\.\S+|(?!.*?[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uac00-\ud7af])(?!.*\s)[\w'’.-]+)$/;
+
+	function cjkLength(text) {
+		let matches = text.match(CJK_RE);
+		return matches ? matches.length : 0;
+	}
+
+	function endsWithOneOf(text, set) {
+		if (!text) {
+			return false;
+		}
+		return set.indexOf(text.charAt(text.length - 1)) !== -1;
+	}
+
+	/**
+	 * Decide whether a selection should be treated as a single word/phrase or
+	 * as a sentence.
+	 *
+	 * @param {String} text
+	 * @returns {'word'|'sentence'}
+	 */
+	function detectTextKind(text) {
+		let value = normalizeText(text);
+		if (!value) {
+			return 'word';
+		}
+		// A number, DOI, URL, e-mail address or abbreviation is one token, not
+		// prose — even though it contains punctuation. A trailing CJK mark is
+		// excluded on purpose: "方法。" always closes a real sentence.
+		let cjkTerminated = endsWithOneOf(value, CJK_END_PUNCT);
+		let cjkShare = cjkLength(value) / Math.max(1, value.length);
+		if (!cjkTerminated && cjkShare < 0.5 && value.length <= 200
+			&& WORDLIKE_RE.test(value) && HAS_ALNUM_RE.test(value)) {
+			return 'word';
+		}
+		if (cjkTerminated) {
+			return 'sentence';
+		}
+		// A punctuation mark inside the text (or one that is not at the very
+		// end, like "Hello, world") means prose, not a single dictionary word.
+		for (let i = 0; i < value.length - 1; i++) {
+			if (NLP_PUNCT.indexOf(value.charAt(i)) !== -1) {
+				return 'sentence';
+			}
+		}
+		let body = value;
+		while (body && endsWithOneOf(body, END_PUNCT)) {
+			body = body.slice(0, -1);
+		}
+		body = body.trim();
+		if (!body) {
+			return 'word';
+		}
+		// CJK text runs without spaces, so a space means several words = prose;
+		// a single CJK token is only a lookup while it stays short, because a
+		// dozen characters are already a whole clause.
+		if (/\s/.test(body)) {
+			return 'sentence';
+		}
+		if (cjkLength(body) / body.length >= 0.5) {
+			return body.length > CJK_PHRASE_TEXT_MAX ? 'sentence' : 'word';
+		}
+		return body.length > WORD_TEXT_MAX ? 'sentence' : 'word';
+	}
+
 	// Language names used when building LLM prompts. Deliberately English so
 	// that the instruction is unambiguous for any model.
 	const PROMPT_LANG_NAMES = {
@@ -193,6 +278,10 @@ ZPT.util = (function () {
 		truncate,
 		pluginError,
 		promptLangName,
-		PROMPT_LANG_NAMES
+		detectTextKind,
+		PROMPT_LANG_NAMES,
+		WORD_TEXT_MAX,
+		CJK_WORD_TEXT_MAX,
+		CJK_PHRASE_TEXT_MAX
 	};
 })();

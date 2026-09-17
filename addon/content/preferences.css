@@ -1,0 +1,37 @@
+/*
+ * Styles for the PDF Translate preferences pane.
+ *
+ * Registered through Zotero.PreferencePanes.register({ stylesheets: [...] }) as
+ * an xml-stylesheet processing instruction on the preferences window, so it is a
+ * normal (non-scoped) stylesheet: every selector is prefixed with #zpt-prefpane
+ * to keep it away from Zotero's own panes.
+ *
+ * XUL <hbox> lays children out inline and gives an html:input its intrinsic
+ * width, so the fields used to look cramped next to their label. The rules
+ * below make every text field fill the rest of its row.
+ */
+
+#zpt-prefpane input.zpt-field[type="text"],
+#zpt-prefpane input.zpt-field[type="password"],
+#zpt-prefpane input.zpt-field[type="number"],
+#zpt-prefpane textarea.zpt-field {
+	width: 100%;
+	box-sizing: border-box;
+	min-width: 12em;
+}
+
+#zpt-prefpane textarea.zpt-field {
+	min-height: 4.5em;
+	resize: vertical;
+}
+
+/* Hint paragraphs under a group: readable, wrapping, slightly indented */
+#zpt-prefpane .zpt-hint {
+	margin: 2px 0 6px 0;
+	opacity: .75;
+	white-space: normal;
+}
+
+#zpt-prefpane .zpt-hint[hidden] {
+	display: none;
+}

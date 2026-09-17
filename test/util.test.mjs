@@ -62,3 +62,50 @@ test('promptLangName falls back to the raw code', () => {
 	assert.equal(ZPT.util.promptLangName('zh-CN'), 'Simplified Chinese');
 	assert.equal(ZPT.util.promptLangName('xx'), 'xx');
 });
+
+test('detectTextKind treats single tokens as words', () => {
+	const cases = [
+		'transformer', 'Transformer', 'Transformer.', 'Transformer,', 'well-known',
+		'神经网络', '中文词汇', 'GmbH.', 'e.g.', 'and/or'
+	];
+	for (const text of cases) {
+		assert.equal(ZPT.util.detectTextKind(text), 'word', `${text} should be a word`);
+	}
+});
+
+test('detectTextKind treats numbers, DOIs, links and addresses as lookups', () => {
+	const cases = ['3.14', '1,000', '12.5%', '10.1000/xyz123', 'https://example.com/a?b=1', 'www.example.com', 'user@example.com'];
+	for (const text of cases) {
+		assert.equal(ZPT.util.detectTextKind(text), 'word', `${text} should be a word`);
+	}
+});
+
+test('detectTextKind treats prose as sentences', () => {
+	const cases = [
+		'This is a sentence.',
+		'Translation is the communication of meaning from one language to another.',
+		'Hello, world.',
+		'guten Morgen',
+		'Bonjour le monde',
+		'Привет мир',
+		'本文提出了一种新的方法。',
+		'本文提出了一种新的方法，并在多个数据集上进行了验证。',
+		'Transformer 模型在机器翻译任务上取得了很好的效果。',
+		'a'.repeat(ZPT.util.WORD_TEXT_MAX + 1) + ' b'
+	];
+	for (const text of cases) {
+		assert.equal(ZPT.util.detectTextKind(text), 'sentence', `${text.slice(0, 30)} should be a sentence`);
+	}
+});
+
+test('detectTextKind keeps the CJK length boundary', () => {
+	const short = '神'.repeat(ZPT.util.CJK_PHRASE_TEXT_MAX);
+	const long = '神'.repeat(ZPT.util.CJK_PHRASE_TEXT_MAX + 1);
+	assert.equal(ZPT.util.detectTextKind(short), 'word');
+	assert.equal(ZPT.util.detectTextKind(long), 'sentence');
+});
+
+test('detectTextKind is not fooled by blank input', () => {
+	assert.equal(ZPT.util.detectTextKind('   '), 'word');
+	assert.equal(ZPT.util.detectTextKind(''), 'word');
+});

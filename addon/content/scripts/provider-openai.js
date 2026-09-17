@@ -40,6 +40,71 @@ ZPT.providers['openai'] = (function () {
 		return /(^|\/\/)(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:|\/|$)/i.test(url);
 	}
 
+	// Ollama behind its default port, behind a host name of its own or behind a
+	// /ollama path on a reverse proxy. Only its endpoint reads reasoning_effort.
+	const OLLAMA_URL_RE = /(^|[./:])ollama([/.:]|$)|:11434(\/|$)/i;
+
+	/*
+	 * Reasoning ("thinking") is on by default for hybrid models, but a
+	 * translation never needs a chain of thought: the trace is billed as output
+	 * and a 1500-character chunk can spend the whole request timeout thinking
+	 * before the first translated word exists. There is no portable switch for
+	 * it in the OpenAI schema, and api.openai.com answers an unknown body field
+	 * with a 400, so a switch is only added for a service we can recognize from
+	 * the base URL — everything else keeps the default its vendor chose.
+	 */
+	const THINKING_SWITCHES = [
+		// Thinking is on by default (effort "high") in the OpenAI format too
+		{ domain: 'deepseek.com', body: { thinking: { type: 'disabled' } } },
+		// Alibaba Cloud Model Studio (DashScope): Qwen3 and other hybrid models
+		{ domain: 'aliyuncs.com', body: { enable_thinking: false } },
+		// Zhipu GLM, domestic and international endpoint
+		{ domain: 'bigmodel.cn', body: { thinking: { type: 'disabled' } } },
+		{ domain: 'z.ai', body: { thinking: { type: 'disabled' } } },
+		// OpenRouter forwards the switch to whichever model it routes to
+		{ domain: 'openrouter.ai', body: { reasoning: { enabled: false } } },
+		// Ollama's hosted endpoint takes the same field as a local server
+		{ domain: 'ollama.com', body: { reasoning_effort: 'none' } }
+	];
+
+	/** Host of a base URL without user-info or port; the sandbox has no URL class. */
+	function hostOf(url) {
+		let match = /^[a-z][a-z0-9+.-]*:\/\/([^/?#]+)/i.exec(String(url || '').trim());
+		if (!match) {
+			return '';
+		}
+		return match[1].split('@').pop().replace(/:\d+$/, '').toLowerCase();
+	}
+
+	function domainIs(host, domain) {
+		return !!host && (host === domain || host.slice(-(domain.length + 1)) === '.' + domain);
+	}
+
+	/**
+	 * Body fields that switch the reasoning trace off, or {} when the service is
+	 * not one we know how to ask.
+	 */
+	function thinkingDisabledFields(baseURL) {
+		if (isLocalURL(baseURL)) {
+			// vLLM, SGLang and llama.cpp read enable_thinking from the Jinja chat
+			// template. Ollama ignores that field and uses reasoning_effort
+			// ("none" in its OpenAI compatibility table) instead — the two are
+			// kept apart because vLLM validates the effort values it knows.
+			let body = { chat_template_kwargs: { enable_thinking: false } };
+			if (OLLAMA_URL_RE.test(String(baseURL))) {
+				body.reasoning_effort = 'none';
+			}
+			return body;
+		}
+		let host = hostOf(baseURL);
+		for (let entry of THINKING_SWITCHES) {
+			if (domainIs(host, entry.domain)) {
+				return entry.body;
+			}
+		}
+		return {};
+	}
+
 	function buildRequest(config, text, sourceLang, targetLang) {
 		let systemPrompt = config.systemPrompt || defaultSystemPrompt(targetLang);
 		if (config.systemPrompt && sourceLang && sourceLang !== 'auto') {
@@ -54,6 +119,10 @@ ZPT.providers['openai'] = (function () {
 				{ role: 'user', content: text }
 			]
 		};
+		let thinking = thinkingDisabledFields(config.baseURL);
+		for (let key of Object.keys(thinking)) {
+			payload[key] = thinking[key];
+		}
 		let headers = {
 			'Content-Type': 'application/json',
 			'Accept': 'application/json'
@@ -118,6 +187,8 @@ ZPT.providers['openai'] = (function () {
 	return {
 		id: ID,
 		labelKey: 'provider.' + ID,
+		// LLM family, used by the smart router for sentences
+		kind: 'llm',
 		needsApiKey: true,
 		isConfigured: () => {
 			let config = settings();
@@ -126,6 +197,8 @@ ZPT.providers['openai'] = (function () {
 		translate,
 		parse,
 		buildRequest,
+		thinkingDisabledFields,
+		hostOf,
 		defaultSystemPrompt,
 		settings,
 		isLocalURL,

@@ -80,6 +80,8 @@ ZPT.providers.mymemory = (function () {
 	return {
 		id: ID,
 		labelKey: 'provider.' + ID,
+		// Free/key-less family, used by the smart router for single words
+		kind: 'free',
 		needsApiKey: false,
 		isConfigured: () => true,
 		translate,

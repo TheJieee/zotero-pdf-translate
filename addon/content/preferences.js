@@ -141,6 +141,8 @@
 		setLabel('zpt-provider-mymemory', t('provider.mymemory'));
 		setLabel('zpt-provider-openai', t('provider.openai'));
 		setText('zpt-hint-provider', t('prefs.provider.hint'));
+		setLabel('zpt-auto-route', t('prefs.route'));
+		setText('zpt-hint-route', t('prefs.route.hint'));
 		setLabel('zpt-auto-fallback', t('prefs.provider.autoFallback'));
 		setLabel('zpt-label-source-lang', t('prefs.sourceLang'));
 		setLabel('zpt-label-target-lang', t('prefs.targetLang'));
@@ -150,6 +152,7 @@
 		setLabel('zpt-label-button-label', t('prefs.popup.buttonLabel'));
 		setLabel('zpt-label-card-width', t('prefs.popup.width'));
 		setLabel('zpt-show-source', t('prefs.popup.showSource'));
+		setLabel('zpt-close-outside', t('prefs.popup.closeOnClickOutside'));
 
 		setText('zpt-heading-annotation', t('prefs.annotation'));
 		setLabel('zpt-annotation-enabled', t('prefs.annotation.enabled'));
@@ -170,7 +173,8 @@
 		setLabel('zpt-label-openai-api-key', t('prefs.openai.apiKey'));
 		setLabel('zpt-label-openai-model', t('prefs.openai.model'));
 		setLabel('zpt-label-openai-prompt', t('prefs.openai.systemPrompt'));
-		setText('zpt-hint-openai', t('prefs.openai.systemPrompt.hint'));
+		setText('zpt-hint-openai', t('prefs.openai.hint'));
+		setText('zpt-hint-openai-prompt', t('prefs.openai.systemPrompt.hint'));
 
 		setText('zpt-heading-advanced', t('prefs.advanced'));
 		setLabel('zpt-label-timeout', t('prefs.timeout'));
@@ -237,19 +241,24 @@
 		}
 	}
 
-	function updateProviderVisibility() {
+	/**
+	 * The provider groups stay visible at all times. They used to be hidden
+	 * unless the "preferred service" menu selected that provider, which meant
+	 * the Base URL / API key fields were simply not reachable when the menu was
+	 * on Google — the settings for a service you are about to configure.
+	 * Instead the dropdown only marks which group is the current choice.
+	 */
+	function updateProviderHighlight() {
 		let provider = currentProvider();
-		let google = byId('zpt-prefpane-google');
-		let mymemory = byId('zpt-prefpane-mymemory');
-		let openai = byId('zpt-prefpane-openai');
-		if (google) {
-			google.hidden = provider !== 'google-free';
-		}
-		if (mymemory) {
-			mymemory.hidden = provider !== 'mymemory';
-		}
-		if (openai) {
-			openai.hidden = provider !== 'openai';
+		for (let [id, name] of [['zpt-prefpane-google', 'google-free'],
+			['zpt-prefpane-mymemory', 'mymemory'],
+			['zpt-prefpane-openai', 'openai']]) {
+			let box = byId(id);
+			if (!box) {
+				continue;
+			}
+			box.hidden = false;
+			box.setAttribute('data-active', provider === name ? 'true' : 'false');
 		}
 	}
 
@@ -291,12 +300,12 @@
 		populateAnnotationTypes();
 		applyStrings();
 		bindNumberFields();
-		updateProviderVisibility();
+		updateProviderHighlight();
 
 		let providerMenu = byId('zpt-provider');
 		if (providerMenu) {
-			providerMenu.addEventListener('command', updateProviderVisibility);
-			providerMenu.addEventListener('change', updateProviderVisibility);
+			providerMenu.addEventListener('command', updateProviderHighlight);
+			providerMenu.addEventListener('change', updateProviderHighlight);
 		}
 		let testButton = byId('zpt-selftest-button');
 		if (testButton) {
