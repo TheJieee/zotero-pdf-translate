@@ -6,7 +6,7 @@ one. Keep it in sync when conventions change.
 
 ## What this is
 
-A Zotero plugin (id `zotero-pdf-translate@example.com`) that adds a "译" button
+A Zotero plugin (id `pdf-translate@thejieee.github.io`) that adds a "译" button
 to the reader's text-selection popup and shows a floating translation card.
 Pure source, **zero runtime and build dependencies** — Node ≥ 18 is the only
 requirement.

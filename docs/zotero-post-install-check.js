@@ -9,7 +9,7 @@
 
 const { AddonManager } = ChromeUtils.importESModule("resource://gre/modules/AddonManager.sys.mjs");
 const OUT = "D:\\repo\\zotero PDF translate\\.diag\\post-install.txt";
-const ID = "zotero-pdf-translate@example.com";
+const ID = "pdf-translate@thejieee.github.io";
 
 const out = [];
 const push = (s) => out.push(s);

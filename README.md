@@ -34,7 +34,7 @@
    ```powershell
    npm run build
    ```
-   产物：`dist/zotero-pdf-translate-1.1.0.xpi`
+   产物：`dist/zotero-pdf-translate-1.2.0.xpi`
 2. 打开 Zotero → **工具 → 插件**（Tools → Plugins）→ 右上角齿轮 → **Install Plugin From File…** → 选择该 `.xpi`。
    （安装包放在哪个目录都行，路径含空格也没问题；但**不要用拖拽**，见下面的排查说明。）
 3. 重启 Zotero（Zotero 会自动加载，必要时手动重启一次）。
@@ -42,9 +42,9 @@
 ### 方式 B：开发模式（免打包，改代码即生效）
 
 ```powershell
-npm run build                  # 生成 build/zotero-pdf-translate-1.1.0/ 未打包目录
+npm run build                  # 生成 build/zotero-pdf-translate-1.2.0/ 未打包目录
 ```
-把 `build/zotero-pdf-translate-1.1.0/` 整个目录复制到 Zotero 配置目录的 `extensions/zotero-pdf-translate@example.com/`：
+把 `build/zotero-pdf-translate-1.2.0/` 整个目录复制到 Zotero 配置目录的 `extensions/pdf-translate@thejieee.github.io/`：
 
 - Windows：`%APPDATA%\Zotero\Zotero\Profiles\<随机>.default\extensions\`
 - macOS：`~/Library/Application Support/Zotero/Profiles/<随机>.default/extensions/`
@@ -58,7 +58,7 @@ npm run build                  # 生成 build/zotero-pdf-translate-1.1.0/ 未打
 
 1. **清单必填项**（本项目踩过的坑，已有自动化检查兜底）：Zotero 打过补丁的 `Extension.sys.mjs` 在加载插件时强制要求 `applications.zotero` 中同时存在
    `id`、`update_url`、`strict_max_version` 三个字段，缺任何一个插件都会被判为无效。
-   `npm run check` 会校验这三项。`update_url` 当前是占位地址，若要发布插件请替换成你自己的 `updates.json` 地址。
+   `npm run check` 会校验这三项，并核对 `update_url` 必须指向本仓库 Release 的 `updates.json`。
 2. **用齿轮菜单安装，不要拖拽**：工具 → 插件 → 右上角齿轮 → **Install Plugin From File…**。
    直接拖到插件页面走的是内核的拖放安装通道，对这类带 `bootstrap.js` 的插件不保证可用。
 3. **换一份打包产物**：`dist/zotero-pdf-translate-1.0.0-alt.xpi`（用 PowerShell 的 `Compress-Archive` 打包）。
@@ -80,9 +80,9 @@ npm run build                  # 生成 build/zotero-pdf-translate-1.1.0/ 未打
 
 5. **免安装的开发模式**（完全绕开 XPI 安装通道）：
    ```powershell
-   $dest = "$env:APPDATA\Zotero\Zotero\Profiles\<你的配置目录>.default\extensions\zotero-pdf-translate@example.com"
+   $dest = "$env:APPDATA\Zotero\Zotero\Profiles\<你的配置目录>.default\extensions\pdf-translate@thejieee.github.io"
    New-Item -ItemType Directory -Force -Path $dest | Out-Null
-   Copy-Item "build\zotero-pdf-translate-1.1.0\*" $dest -Recurse -Force
+   Copy-Item "build\zotero-pdf-translate-1.2.0\*" $dest -Recurse -Force
    ```
    Zotero 默认会自动禁用这类侧载插件（`extensions.autoDisableScopes`），在插件页面点「启用」即可。
 
@@ -297,7 +297,7 @@ user_pref("extensions.zotero.pdfTranslate.selfTestFile", "D:/tmp/pdf-translate-s
 
 - 阅读模式（Reading Mode）与 EPUB 下的划词体验逐项实测
 - 深色主题下卡片样式的细节
-- 若要上架 Zotero 官方插件仓库，需要换成自己域名的插件 ID 并走 Zotero 的签名流程
+- Zotero 官方目前仍在筹备官方插件目录；社区插件市场（Zotero Addons / zotero-chinese 插件页）已提交索引条目，正式上架官方目录时还需要走签名流程
 
 遇到问题请开 Issue，或把 **帮助 → Debug Output Logging** 里 `[PDF Translate]` 的相关行贴出来。
 
@@ -310,8 +310,8 @@ user_pref("extensions.zotero.pdfTranslate.selfTestFile", "D:/tmp/pdf-translate-s
 - `update_url` 指向本仓库最新 Release 里的 `updates.json`（每次发版都会同时上传），实现 Zotero 内的自动更新。
 - 阅读模式（Reading Mode）与 EPUB 同样走 `renderTextSelectionPopup`，理论上可用，但尚未逐一实测。
 - 译文卡片为插件自绘 DOM，Zotero 大版本升级后如样式异常，改 `reader-ui.js` 中的 `CSS` 即可。
-- 插件 ID 为 `zotero-pdf-translate@example.com`，如需上架 Zotero 插件仓库请换成自己的域名 ID。
+- 插件 ID 自 v1.2.0 起为 `pdf-translate@thejieee.github.io`（v1.1.0 及更早为占位 ID `zotero-pdf-translate@example.com`）。**改 ID 后旧版本收不到自动更新**，请重新安装一次 xpi。
 
 ## 9. 许可
 
-AGPL-3.0-or-later（与 Zotero 插件生态一致）。
+MIT License，见 [LICENSE](LICENSE)。

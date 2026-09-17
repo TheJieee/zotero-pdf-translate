@@ -15,9 +15,9 @@
  */
 
 const { AddonManager } = ChromeUtils.importESModule("resource://gre/modules/AddonManager.sys.mjs");
-const SRC = "D:\\repo\\zotero PDF translate\\dist\\zotero-pdf-translate-1.0.0.xpi";
+const SRC = "D:\\repo\\zotero PDF translate\\dist\\zotero-pdf-translate-1.2.0.xpi";
 const OUT = "D:\\repo\\zotero PDF translate\\.diag\\install-result.txt";
-const ID = "zotero-pdf-translate@example.com";
+const ID = "pdf-translate@thejieee.github.io";
 
 const out = [];
 const push = (s) => out.push(s);
@@ -57,7 +57,7 @@ let copyPath = null;
 try {
 	const dir = PathUtils.join(PathUtils.tempDir, "zpt-install");
 	await IOUtils.makeDirectory(dir, { ignoreExisting: true });
-	copyPath = PathUtils.join(dir, "zotero-pdf-translate-1.0.0.xpi");
+	copyPath = PathUtils.join(dir, "zotero-pdf-translate-1.2.0.xpi");
 	await IOUtils.copy(SRC, copyPath);
 	const stat = await IOUtils.stat(copyPath);
 	push("[A] 已复制到无空格路径: " + copyPath + " (" + stat.size + " bytes)");
