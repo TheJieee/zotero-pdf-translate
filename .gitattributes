@@ -1,0 +1,4 @@
+# 统一行尾，避免 Windows 上出现 CRLF 噪音
+* text=auto eol=lf
+*.png binary
+*.xpi binary

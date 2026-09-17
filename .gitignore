@@ -1,0 +1,10 @@
+node_modules/
+dist/
+build/
+.research/
+.dev-profile/
+.npm-cache/
+.tools/
+.diag/
+release/updates.json
+*.log

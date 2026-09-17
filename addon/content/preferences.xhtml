@@ -1,0 +1,157 @@
+<!--
+	Preferences pane for the PDF Translate plugin.
+
+	Loaded as a fragment by Zotero.PreferencePanes.register() with XUL as the
+	default namespace, so HTML elements need the `html:` prefix. Labels are set
+	by content/preferences.js from the plugin's own dictionary, and values are
+	bound to prefs declaratively through the `preference` attribute.
+-->
+<vbox id="zpt-prefpane">
+
+	<groupbox id="zpt-prefpane-general">
+		<label><html:h2 id="zpt-heading-general">PDF Translate</html:h2></label>
+
+		<hbox align="center">
+			<label id="zpt-label-provider" flex="1" control="zpt-provider"/>
+			<menulist id="zpt-provider" native="true" preference="extensions.zotero.pdfTranslate.provider">
+				<menupopup>
+					<menuitem id="zpt-provider-google-free" value="google-free"/>
+					<menuitem id="zpt-provider-mymemory" value="mymemory"/>
+					<menuitem id="zpt-provider-openai" value="openai"/>
+				</menupopup>
+			</menulist>
+		</hbox>
+		<description id="zpt-hint-provider" class="zpt-hint"/>
+		<checkbox id="zpt-auto-fallback" native="true"
+			preference="extensions.zotero.pdfTranslate.provider.autoFallback"/>
+
+		<hbox align="center">
+			<label id="zpt-label-source-lang" flex="1" control="zpt-source-lang"/>
+			<menulist id="zpt-source-lang" native="true" preference="extensions.zotero.pdfTranslate.sourceLang">
+				<menupopup id="zpt-source-lang-popup"/>
+			</menulist>
+		</hbox>
+
+		<hbox align="center">
+			<label id="zpt-label-target-lang" flex="1" control="zpt-target-lang"/>
+			<menulist id="zpt-target-lang" native="true" preference="extensions.zotero.pdfTranslate.targetLang">
+				<menupopup id="zpt-target-lang-popup"/>
+			</menulist>
+		</hbox>
+	</groupbox>
+
+	<groupbox id="zpt-prefpane-popup">
+		<label><html:h2 id="zpt-heading-popup"/></label>
+		<checkbox id="zpt-show-button" native="true"
+			preference="extensions.zotero.pdfTranslate.popup.showButton"/>
+		<hbox align="center">
+			<label id="zpt-label-button-label" flex="1" control="zpt-button-label"/>
+			<html:input id="zpt-button-label" type="text" size="4"
+				preference="extensions.zotero.pdfTranslate.popup.buttonLabel"/>
+		</hbox>
+		<hbox align="center">
+			<label id="zpt-label-card-width" flex="1" control="zpt-card-width"/>
+			<html:input id="zpt-card-width" type="number" min="240" max="800" step="10" size="5"/>
+		</hbox>
+		<checkbox id="zpt-show-source" native="true"
+			preference="extensions.zotero.pdfTranslate.popup.showSource"/>
+	</groupbox>
+
+	<groupbox id="zpt-prefpane-annotation">
+		<label><html:h2 id="zpt-heading-annotation"/></label>
+		<checkbox id="zpt-annotation-enabled" native="true"
+			preference="extensions.zotero.pdfTranslate.annotation.enabled"/>
+		<hbox align="center">
+			<label id="zpt-label-annotation-type" flex="1" control="zpt-annotation-type"/>
+			<menulist id="zpt-annotation-type" native="true"
+				preference="extensions.zotero.pdfTranslate.annotation.type">
+				<menupopup>
+					<menuitem id="zpt-annotation-highlight" value="highlight"/>
+					<menuitem id="zpt-annotation-underline" value="underline"/>
+				</menupopup>
+			</menulist>
+		</hbox>
+		<hbox align="center">
+			<label id="zpt-label-annotation-color" flex="1" control="zpt-annotation-color"/>
+			<menulist id="zpt-annotation-color" native="true"
+				preference="extensions.zotero.pdfTranslate.annotation.color">
+				<menupopup>
+					<menuitem id="zpt-color-yellow" value="#ffd400"/>
+					<menuitem id="zpt-color-red" value="#ff6666"/>
+					<menuitem id="zpt-color-green" value="#5fb236"/>
+					<menuitem id="zpt-color-blue" value="#2ea8e5"/>
+					<menuitem id="zpt-color-purple" value="#a28ae5"/>
+				</menupopup>
+			</menulist>
+		</hbox>
+	</groupbox>
+
+	<groupbox id="zpt-prefpane-google">
+		<label><html:h2 id="zpt-heading-google"/></label>
+		<hbox align="center">
+			<label id="zpt-label-google-endpoint" flex="1" control="zpt-google-endpoint"/>
+			<html:input id="zpt-google-endpoint" type="text" flex="1"
+				preference="extensions.zotero.pdfTranslate.googleFree.endpoint"/>
+		</hbox>
+		<description id="zpt-hint-google" class="zpt-hint"/>
+	</groupbox>
+
+	<groupbox id="zpt-prefpane-mymemory">
+		<label><html:h2 id="zpt-heading-mymemory"/></label>
+		<hbox align="center">
+			<label id="zpt-label-mymemory-endpoint" flex="1" control="zpt-mymemory-endpoint"/>
+			<html:input id="zpt-mymemory-endpoint" type="text" flex="1"
+				preference="extensions.zotero.pdfTranslate.mymemory.endpoint"/>
+		</hbox>
+		<hbox align="center">
+			<label id="zpt-label-mymemory-email" flex="1" control="zpt-mymemory-email"/>
+			<html:input id="zpt-mymemory-email" type="text" flex="1"
+				preference="extensions.zotero.pdfTranslate.mymemory.email"/>
+		</hbox>
+		<description id="zpt-hint-mymemory" class="zpt-hint"/>
+	</groupbox>
+
+	<groupbox id="zpt-prefpane-openai">
+		<label><html:h2 id="zpt-heading-openai"/></label>
+		<hbox align="center">
+			<label id="zpt-label-openai-base-url" flex="1" control="zpt-openai-base-url"/>
+			<html:input id="zpt-openai-base-url" type="text" flex="1"
+				preference="extensions.zotero.pdfTranslate.openai.baseURL"/>
+		</hbox>
+		<hbox align="center">
+			<label id="zpt-label-openai-api-key" flex="1" control="zpt-openai-api-key"/>
+			<html:input id="zpt-openai-api-key" type="password" flex="1"
+				preference="extensions.zotero.pdfTranslate.openai.apiKey"/>
+		</hbox>
+		<hbox align="center">
+			<label id="zpt-label-openai-model" flex="1" control="zpt-openai-model"/>
+			<html:input id="zpt-openai-model" type="text" flex="1"
+				preference="extensions.zotero.pdfTranslate.openai.model"/>
+		</hbox>
+		<hbox align="center">
+			<label id="zpt-label-openai-prompt" flex="1" control="zpt-openai-prompt"/>
+			<html:textarea id="zpt-openai-prompt" rows="3"
+				preference="extensions.zotero.pdfTranslate.openai.systemPrompt"/>
+		</hbox>
+		<description id="zpt-hint-openai" class="zpt-hint"/>
+	</groupbox>
+
+	<groupbox id="zpt-prefpane-advanced">
+		<label><html:h2 id="zpt-heading-advanced"/></label>
+		<hbox align="center">
+			<label id="zpt-label-timeout" flex="1" control="zpt-timeout"/>
+			<html:input id="zpt-timeout" type="number" min="5" max="120" step="1" size="4"/>
+		</hbox>
+		<hbox align="center">
+			<label id="zpt-label-max-chars" flex="1" control="zpt-max-chars"/>
+			<html:input id="zpt-max-chars" type="number" min="300" max="8000" step="100" size="5"/>
+		</hbox>
+		<checkbox id="zpt-debug" native="true"
+			preference="extensions.zotero.pdfTranslate.debug"/>
+		<separator class="thin"/>
+		<hbox align="center">
+			<button id="zpt-selftest-button"/>
+			<label id="zpt-selftest-status" flex="1"/>
+		</hbox>
+	</groupbox>
+</vbox>
