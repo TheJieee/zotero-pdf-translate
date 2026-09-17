@@ -243,19 +243,19 @@ user_pref("extensions.zotero.pdfTranslate.selfTestFile", "D:/tmp/pdf-translate-s
 已在本机完成的验证：
 
 - ✅ `npm test`：47 个单元测试全部通过
-- ✅ `npm run check`：脚本语法、24 个偏好项与默认值一致、双语字符串键一致（73 条/语言）、bootstrap 脚本清单、设置面板 70 个 id 引用、**清单必填字段（id / update_url / strict_max_version）**
+- ✅ `npm run check`：脚本语法、24 个偏好项与默认值一致、双语字符串键一致（73 条/语言）、bootstrap 脚本清单、设置面板 70 个 id 引用、**清单必填字段（id / update_url / strict_max_version）且 update_url 指向本仓库 Release 地址**
 - ✅ `npm run verify`：打包产物结构正确；对照本机 **Zotero 10.0.2** 的 `omni.ja` 逐项确认 18 个 API 集成点全部存在
 - ✅ MyMemory / DeepSeek 等接口在本机网络下真实请求成功（Google / OpenAI 在本机网络不可达，属网络环境问题）
-- ⏳ 插件在真实 Zotero 中的 GUI 交互（划词按钮、译文卡片、存批注）此前被「安装失败」阻塞；安装失败的根因已定位并修复（缺少 `applications.zotero.update_url`），**需要你安装后实际验证**
+- ✅ 插件已在真实 **Zotero 10.0.2** 中安装并实测可用（划词工具条 `译` 按钮 → 悬浮译文卡片）
+- ✅ 发布链路：Release v1.0.0 的 `updates.json` 与 XPI 均可从 `releases/latest/download/…` 下载，XPI 的 sha256 与 `update_hash` 一致，包内 `update_url` 指向该 Release
 
-安装后请确认：
+后续可以继续打磨的方向：
 
-1. **工具 → 插件** 中出现「PDF Translate」1.0.0；
-2. 打开 PDF 选中文本，划词工具条上出现 `译` 按钮；
-3. 点击后选区旁弹出卡片并显示译文；
-4. 「复制」「存为批注」可用（批注出现在右侧批注列表）。
+- 阅读模式（Reading Mode）与 EPUB 下的划词体验逐项实测
+- 深色主题下卡片样式的细节
+- 若要上架 Zotero 官方插件仓库，需要换成自己域名的插件 ID 并走 Zotero 的签名流程
 
-有任何一步不符预期，请把 **帮助 → Debug Output Logging** 里 `[PDF Translate]` 的相关行发我。
+遇到问题请开 Issue，或把 **帮助 → Debug Output Logging** 里 `[PDF Translate]` 的相关行贴出来。
 
 ---
 
