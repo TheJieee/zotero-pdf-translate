@@ -288,6 +288,9 @@ user_pref("extensions.zotero.pdfTranslate.selfTestFile", "D:/tmp/pdf-translate-s
 - ✅ MyMemory / DeepSeek 等接口在本机网络下真实请求成功（Google / OpenAI 在本机网络不可达，属网络环境问题）
 - ✅ 插件已在真实 **Zotero 10.0.2** 中安装并实测可用（划词工具条 `译` 按钮 → 悬浮译文卡片）
 - ✅ 发布链路：Release v1.0.0 的 `updates.json` 与 XPI 均可从 `releases/latest/download/…` 下载，XPI 的 sha256 与 `update_hash` 一致，包内 `update_url` 指向该 Release
+- ✅ 上架社区插件市场（v1.2.0）：插件 ID 换成真实域名 ID `pdf-translate@thejieee.github.io`、补上 MIT LICENSE，并向社区插件索引仓库 `syt2/zotero-addons-scraper` 提交条目：PR [#240](https://github.com/syt2/zotero-addons-scraper/pull/240)。合并后即可在 **Zotero Addons 插件市场** 与 **zotero-chinese 插件页** 里直接搜索安装，无需手动下载 xpi。
+
+> v1.2.0：**插件 ID 变更**（`zotero-pdf-translate@example.com` → `pdf-translate@thejieee.github.io`），协议改为 MIT。Zotero 按 ID 匹配更新，因此 v1.1.0 及更早的安装**收不到这次自动更新**，需要重新安装一次 xpi（旧版卸载后装新版即可，设置项会保留在 prefs 里）。
 
 > v1.1.0：设置面板不再隐藏服务分组——Base URL / API Key 现在始终显示在「OpenAI 兼容接口」分组里（以前只有把「首选服务」切到 OpenAI 才看得见），并把该分组上移到「批注」之后；输入框已占满整行、每个都带灰色示例提示。
 > 智能路由与「点击卡片外关闭」为 v1.0.1 新增：路由、判定与降级逻辑已有单元测试覆盖；卡片本身的界面行为（点击卡片外 / `Esc` / `×` / 拖动）需在阅读器里实测一次确认。
