@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # 静态一致性检查：语法、偏好项、双语字符串、脚本清单、设置面板 id、
+      # 清单必填字段（id / update_url / strict_max_version）与 update_url 地址
+      - name: Check sources
+        run: npm run check
+
+      # 47 个单元测试（翻译核心、分块、缓存、自动降级、批注、错误映射）
+      - name: Run tests
+        run: npm test
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Upload xpi
+        uses: actions/upload-artifact@v4
+        with:
+          name: xpi
+          path: dist/*.xpi
+
+# 说明：`npm run verify` 需要本机安装 Zotero（读取 omni.ja 核对 API），
+# 因此不在 CI 里执行，发布前请在本地跑一次。

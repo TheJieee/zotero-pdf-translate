@@ -1,0 +1,118 @@
+name: Release
+
+# 打 tag（v1.0.1、v1.1.0 …）即自动构建并发布 Release：
+#   - 校验源码（npm run check / npm test）
+#   - 构建 XPI 并生成 updates.json（含 sha256，Zotero 用它做增量更新）
+#   - 把两者作为 Release 资源上传；update_url 固定指向
+#     https://github.com/<owner>/<repo>/releases/latest/download/updates.json
+#
+# 也可以在 Actions 页面手动触发：
+#   - dry_run = true（默认）：只构建并上传构建产物，不创建 Release
+#   - dry_run = false + tag：创建一个「预发布」用于验证发布链路（不影响 latest）
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '只构建并上传构建产物，不创建 Release'
+        type: boolean
+        default: true
+      tag:
+        description: 'dry_run=false 时用于创建测试预发布的 tag，例如 v1.0.0-ci-test'
+        type: string
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate sources
+        run: |
+          npm run check
+          npm test
+
+      - name: Build plugin and update manifest
+        run: npm run release
+
+      - name: Check tag matches built version
+        if: github.event_name == 'push'
+        run: |
+          XPI="$(ls dist/*.xpi)"
+          VERSION="${XPI#dist/zotero-pdf-translate-}"
+          VERSION="${VERSION%.xpi}"
+          echo "built version: $VERSION, tag: $GITHUB_REF_NAME"
+          if [ "$GITHUB_REF_NAME" != "v$VERSION" ]; then
+            echo "::error::tag $GITHUB_REF_NAME 与构建出的版本 v$VERSION 不一致（请先同步 package.json / addon/manifest.json 里的版本号）"
+            exit 1
+          fi
+
+      - name: Generate release notes
+        run: |
+          XPI="$(ls dist/*.xpi)"
+          VERSION="${XPI#dist/zotero-pdf-translate-}"
+          VERSION="${VERSION%.xpi}"
+          SHA="$(node -e "const c=require('crypto'),f=require('fs');console.log(c.createHash('sha256').update(f.readFileSync(process.argv[1])).digest('hex'))" "$XPI")"
+          {
+            echo "## Zotero PDF Translate v$VERSION"
+            echo
+            echo "在 Zotero 阅读器里划词翻译：选中文本 → 划词工具条上的 \`译\` 按钮 → 选区旁弹出译文卡片（可拖动 / 复制 / 存为批注）。"
+            echo
+            echo "### 安装"
+            echo "1. 下载下面的 \`zotero-pdf-translate-$VERSION.xpi\`"
+            echo "2. Zotero → 工具 → 插件 → 右上角齿轮 → **Install Plugin From File…**（不要用拖拽）"
+            echo "3. 重启 Zotero"
+            echo
+            echo "### 校验"
+            echo "- XPI sha256：\`$SHA\`"
+            echo "- 与本 Release 的 \`updates.json\` 中 \`update_hash\` 一致，Zotero 会自动用它检查更新"
+            echo
+            echo "> 国内网络下 \`translate.googleapis.com\` / \`api.openai.com\` 直连不通属正常；请在「设置 → PDF Translate」改用 **MyMemory** 或填写 DeepSeek 等 OpenAI 兼容接口。"
+            echo
+            echo "### 提交记录"
+            echo
+            git log --no-decorate --pretty='- %s (%h)' "$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo '')..HEAD" 2>/dev/null || git log --no-decorate --pretty='- %s (%h)' -10
+          } > release-notes.md
+          cat release-notes.md
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: zotero-pdf-translate-build
+          path: |
+            dist/*.xpi
+            release/updates.json
+
+      - name: Create release (tag push)
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            dist/*.xpi release/updates.json \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file release-notes.md
+
+      - name: Create verification prerelease (manual dispatch)
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run == false && inputs.tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ inputs.tag }}" \
+            dist/*.xpi release/updates.json \
+            --title "${{ inputs.tag }} (CI 验证用预发布)" \
+            --prerelease \
+            --notes-file release-notes.md
